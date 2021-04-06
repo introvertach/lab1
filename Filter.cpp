@@ -80,3 +80,38 @@ QColor IncreaseBrightnessFilter::calcNewPixelColor(const QImage& img, int x, int
 		clamp(color.blue() + k, 255.f, 0.f));
 	return color;
 }
+
+QImage PerfectReflector::process(const QImage& img) const
+{
+	QImage result(img);
+
+	QColor maxColor;
+	for (int x = 0; x < img.width(); x++)
+		for (int y = 0; y < img.height(); y++)
+		{
+			if (maxColor.red() < img.pixelColor(x, y).red())
+				maxColor.setRed(img.pixelColor(x, y).red());
+
+			if (maxColor.green() < img.pixelColor(x, y).green())
+				maxColor.setGreen(img.pixelColor(x, y).green());
+
+			if (maxColor.blue() < img.pixelColor(x, y).blue())
+				maxColor.setBlue(img.pixelColor(x, y).blue());
+		}
+
+	for (int x = 0; x < img.width(); x++)
+		for (int y = 0; y < img.height(); y++)
+		{
+			QColor color = calcNewPixelColor(img, x, y, maxColor);
+			result.setPixelColor(x, y, color);
+		}
+
+	return result;
+}
+
+QColor PerfectReflector::calcNewPixelColor(const QImage& img, int x, int y, QColor& maxColor) const
+{
+	QColor color = img.pixelColor(x, y);
+	color.setRgb(color.red() * 255 / maxColor.red(), color.green() * 255 / maxColor.green(), color.blue() * 255 / maxColor.blue());
+	return color;
+}

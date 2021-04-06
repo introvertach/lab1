@@ -165,3 +165,10 @@ public:
 	SharpnessFilter(std::size_t radius = 2) : MatrixFilter(SharpnessKernel(radius)) {}
 };
 
+class PerfectReflector
+{
+protected:
+	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& maxColor) const;
+public:
+	QImage process(const QImage& img) const;
+};

@@ -86,6 +86,7 @@ QImage PerfectReflector::process(const QImage& img) const
 	QImage result(img);
 
 	QColor maxColor;
+	maxColor.setRgb(0, 0, 0);
 	for (int x = 0; x < img.width(); x++)
 		for (int y = 0; y < img.height(); y++)
 		{
@@ -115,3 +116,102 @@ QColor PerfectReflector::calcNewPixelColor(const QImage& img, int x, int y, QCol
 	color.setRgb(color.red() * 255 / maxColor.red(), color.green() * 255 / maxColor.green(), color.blue() * 255 / maxColor.blue());
 	return color;
 }
+
+QImage HistogramStretch::process(const QImage& img) const
+{
+	QImage result(img);
+
+	QColor minColor;
+	QColor maxColor;
+	minColor.setRgb(255, 255, 255);
+	maxColor.setRgb(0, 0, 0);
+	for (int x = 0; x < img.width(); x++)
+		for (int y = 0; y < img.height(); y++)
+		{
+			if (maxColor.red() > img.pixelColor(x, y).red())
+				minColor.setRed(img.pixelColor(x, y).red());
+			if (maxColor.red() < img.pixelColor(x, y).red())
+				maxColor.setRed(img.pixelColor(x, y).red());
+
+			if (maxColor.green() > img.pixelColor(x, y).green())
+				minColor.setGreen(img.pixelColor(x, y).green());
+			if (maxColor.green() < img.pixelColor(x, y).green())
+				maxColor.setGreen(img.pixelColor(x, y).green());
+
+			if (maxColor.blue() > img.pixelColor(x, y).blue())
+				minColor.setBlue(img.pixelColor(x, y).blue());
+			if (maxColor.blue() < img.pixelColor(x, y).blue())
+				maxColor.setBlue(img.pixelColor(x, y).blue());
+		}
+
+	for (int x = 0; x < img.width(); x++)
+		for (int y = 0; y < img.height(); y++)
+		{
+			QColor color = calcNewPixelColor(img, x, y, minColor, maxColor);
+			result.setPixelColor(x, y, color);
+		}
+
+	return result;
+}
+
+QColor HistogramStretch::calcNewPixelColor(const QImage& img, int x, int y, QColor& minColor, QColor& maxColor) const
+{
+	QColor color = img.pixelColor(x, y);
+	color.setRgb(clamp(255 * (color.red() - minColor.red()) / (maxColor.red() - minColor.red()), 255, 0),
+		clamp(255 * (color.green() - minColor.green()) / (maxColor.green() - minColor.green()), 255, 0),
+		clamp(255 * (color.blue() - minColor.blue()) / (maxColor.blue() - minColor.blue()), 255, 0));
+	return color;
+}
+
+QImage MedianFilter::process(const QImage& img) const
+{
+	QImage result(img);
+
+	int size = 2 * radius + 1;
+	Kernel Kernel1(radius), Kernel2(radius), Kernel3(radius);
+	QColor color;
+	for (int x = radius; x < img.width() - radius; x++)
+		for (int y = radius; y < img.height() - radius; y++)
+		{
+			for(int a = x - radius; a < x + radius; a++)
+				for (int b = y - radius; b < y + radius; b++)
+				{
+					int idx = (a - x + radius) * size + b - y + radius;
+					Kernel1[idx] = static_cast<float>(img.pixelColor(a, b).red());
+					Kernel2[idx] = static_cast<float>(img.pixelColor(a, b).green());
+					Kernel3[idx] = static_cast<float>(img.pixelColor(a, b).blue());
+				}
+
+			for (int i = 0; i < size * size - 1; i++)
+			{
+				for (int j = i+1; j < size * size; j++)
+				{
+					if (Kernel1[i] > Kernel1[j])
+					{
+						float temp = Kernel1[i];
+						Kernel1[i] = Kernel1[j];
+						Kernel1[j] = temp;
+					}
+
+					if (Kernel2[i] > Kernel2[j])
+					{
+						float temp = Kernel2[i];
+						Kernel2[i] = Kernel2[j];
+						Kernel2[j] = temp;
+					}
+
+					if (Kernel3[i] > Kernel3[j])
+					{
+						float temp = Kernel3[i];
+						Kernel3[i] = Kernel3[j];
+						Kernel3[j] = temp;
+					}
+				}
+			}
+			color.setRgb(Kernel1[(size * size) / 2], Kernel2[(size * size) / 2], 
+				Kernel3[(size * size) / 2]);
+			result.setPixelColor(x, y, color);
+		}
+	return result;
+}
+

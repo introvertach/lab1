@@ -1,6 +1,6 @@
 #pragma once
 #include<qimage.h>
-#include<memory>
+//#include<memory>
 #include<iostream>
 #include<cstdlib>
 class Filter
@@ -115,7 +115,7 @@ class ySobelKernel : public Kernel
 {
 public:
 	using Kernel::Kernel;
-	ySobelKernel(std::size_t radius = 2) : Kernel(radius)
+	ySobelKernel(std::size_t radius = 1) : Kernel(radius)
 	{
 		data[0] = -1, data[1] = -2, data[2] = -1, 
 			data[3] = 0, data[4] = 0, data[5] = 0,
@@ -126,14 +126,14 @@ public:
 class ySobelFilter : public MatrixFilter
 {
 public:
-	ySobelFilter(std::size_t radius = 2) : MatrixFilter(ySobelKernel(radius)) {}
+	ySobelFilter(std::size_t radius = 1) : MatrixFilter(ySobelKernel(radius)) {}
 };
 
 class xSobelKernel : public Kernel
 {
 public:
 	using Kernel::Kernel;
-	xSobelKernel(std::size_t radius = 2) : Kernel(radius)
+	xSobelKernel(std::size_t radius = 1) : Kernel(radius)
 	{
 		data[0] = -1, data[1] = 0, data[2] = 1,
 			data[3] = -2, data[4] = 0, data[5] = 2,
@@ -144,14 +144,14 @@ public:
 class xSobelFilter : public MatrixFilter
 {
 public:
-	xSobelFilter(std::size_t radius = 2) : MatrixFilter(xSobelKernel(radius)) {}
+	xSobelFilter(std::size_t radius = 1) : MatrixFilter(xSobelKernel(radius)) {}
 };
 
 class SharpnessKernel : public Kernel
 {
 public:
 	using Kernel::Kernel;
-	SharpnessKernel(std::size_t radius = 2) : Kernel(radius)
+	SharpnessKernel(std::size_t radius = 1) : Kernel(radius)
 	{
 		data[0] = 0, data[1] = -1, data[2] = 0,
 			data[3] = -1, data[4] = 5, data[5] = -1,
@@ -162,7 +162,7 @@ public:
 class SharpnessFilter : public MatrixFilter
 {
 public:
-	SharpnessFilter(std::size_t radius = 2) : MatrixFilter(SharpnessKernel(radius)) {}
+	SharpnessFilter(std::size_t radius = 1) : MatrixFilter(SharpnessKernel(radius)) {}
 };
 
 class PerfectReflector
@@ -172,3 +172,63 @@ protected:
 public:
 	QImage process(const QImage& img) const;
 };
+
+class HistogramStretch
+{
+protected:
+	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& minColor, QColor& maxColor) const;
+public:
+	QImage process(const QImage& img) const;
+};
+
+class MotionBlurKernel : public Kernel
+{
+public:
+	using Kernel::Kernel;
+	MotionBlurKernel(std::size_t radius = 2) : Kernel(radius)
+	{
+		for (std::size_t idx = 0; idx < getLen(); idx++)
+		{
+			if (idx % getSize() == 0)
+				data[idx] = 1.f / getSize();
+			else
+				data[idx] = 0;
+		}
+	}
+};
+
+class MotionBlurFilter : public MatrixFilter
+{
+public:
+	MotionBlurFilter(std::size_t radius = 2) : MatrixFilter(MotionBlurKernel(radius)) {}
+};
+
+class EmbossingKernel : public Kernel
+{
+public:
+	using Kernel::Kernel;
+	EmbossingKernel(std::size_t radius = 1) : Kernel(radius)
+	{
+		data[0] = 0, data[1] = 1, data[2] = 0,
+			data[3] = 1, data[4] = 0, data[5] = -1,
+			data[6] = 0, data[7] = -1, data[8] = 0;
+	}
+};
+
+class EmbossingFilter : public MatrixFilter
+{
+public:
+	EmbossingFilter(std::size_t radius = 1) : MatrixFilter(EmbossingKernel(radius)) 
+	{
+	}
+};
+
+class MedianFilter //: public MatrixFilter
+{
+private:
+	std::size_t radius;
+public:
+	MedianFilter(std::size_t radius = 1) : radius(radius) {}
+	QImage process(const QImage& img) const;
+};
+

@@ -163,12 +163,36 @@ QColor HistogramStretch::calcNewPixelColor(const QImage& img, int x, int y, QCol
 	return color;
 }
 
+QColor EmbossingFilter::calcNewPixelColor(const QImage& img, int x, int y) const
+{
+	float ReturnR = 0;
+	float ReturnG = 0;
+	float ReturnB = 0;
+	float k = 100;
+	int radius = mKernel.getRadius();
+	int size = mKernel.getSize();
+
+	for (int i = -radius; i <= radius; i++)
+		for (int j = -radius; j <= radius; j++)
+		{
+			int idx = (i + radius) * size + (j + radius);
+			QColor color = img.pixelColor(clamp(x + j, img.width() - 1, 0),
+				clamp(y + i, img.height() - 1, 0));
+
+			ReturnR += color.red() * mKernel[idx];
+			ReturnG += color.green() * mKernel[idx];
+			ReturnB += color.blue() * mKernel[idx];
+		}
+	return QColor(clamp(ReturnR + k, 255.f, 0.f), clamp(ReturnG + k, 255.f, 0.f),
+		clamp(ReturnB + k, 255.f, 0.f));
+}
+
 QImage MedianFilter::process(const QImage& img) const
 {
 	QImage result(img);
 
-	int size = 2 * radius + 1;
 	Kernel Kernel1(radius), Kernel2(radius), Kernel3(radius);
+	int size = 2 * radius + 1;
 	QColor color;
 	for (int x = radius; x < img.width() - radius; x++)
 		for (int y = radius; y < img.height() - radius; y++)
@@ -215,3 +239,85 @@ QImage MedianFilter::process(const QImage& img) const
 	return result;
 }
 
+QColor DilationFilter::calcNewPixelColor(const QImage& img, int x, int y) const
+{
+	float Return = 255;
+	int radius = mKernel.getRadius();
+	int size = mKernel.getSize();
+
+	for (int i = -radius; i <= radius; i++)
+		for (int j = -radius; j <= radius; j++)
+		{
+			int idx = (i + radius) * size + (j + radius);
+			QColor color = img.pixelColor(clamp(x + j, img.width() - 1, 0),
+				clamp(y + i, img.height() - 1, 0));
+
+			if (Return > color.red() * mKernel[idx])
+				Return = color.red() * mKernel[idx];
+		}
+	return QColor(clamp(Return, 255.f, 0.f), clamp(Return, 255.f, 0.f),
+		clamp(Return, 255.f, 0.f));
+}
+
+QColor ErosionFilter::calcNewPixelColor(const QImage& img, int x, int y) const
+{
+	float Return = 0;
+	int radius = mKernel.getRadius();
+	int size = mKernel.getSize();
+
+	for (int i = -radius; i <= radius; i++)
+		for (int j = -radius; j <= radius; j++)
+		{
+			int idx = (i + radius) * size + (j + radius);
+			QColor color = img.pixelColor(clamp(x + j, img.width() - 1, 0),
+				clamp(y + i, img.height() - 1, 0));
+
+			if (Return < color.red() * mKernel[idx] && mKernel[idx] != 0)
+				Return = color.red() * mKernel[idx];
+		}
+	return QColor(clamp(Return, 255.f, 0.f), clamp(Return, 255.f, 0.f),
+		clamp(Return, 255.f, 0.f));
+}
+
+QImage MathGradFilter::process(const QImage& img) const
+{
+	MathMorphKernel kernel(radius);
+	DilationFilter dilation(kernel);
+	ErosionFilter erosion(kernel);
+	QImage dil = dilation.process(img);
+	QImage eros = erosion.process(img);
+	QImage result(img);
+
+	float color;
+	QColor Color;
+	for (int x = 0; x < img.width(); x++)
+		for (int y = 0; y < img.height(); y++)
+		{
+			color = clamp(eros.pixelColor(x, y).red() - dil.pixelColor(x, y).red(), 255, 0);
+			Color.setRgb(color, color, color);
+			result.setPixelColor(x, y, Color);
+		}
+	return result;
+}
+
+QColor TransferFilter::calcNewPixelColor(const QImage& img, int x, int y) const
+{
+	QColor color;
+	if (x < img.width() - 50)
+		color = img.pixelColor(x + 50, y);
+	else
+		color.setRgb(0, 0, 0);
+	return color;
+}
+
+QColor RotationFilter::calcNewPixelColor(const QImage& img, int x, int y) const
+{
+	QColor color;
+	int xr = (x - x0) * cos(a) - (y - y0) * sin(a) + x0;
+	int yr = (x - x0) * sin(a) + (y - y0) * cos(a) + y0;
+	if (xr < 0 || xr >= img.width() || yr < 0 || yr >= img.height())
+		color.setRgb(0, 0, 0);
+	else
+		color = img.pixelColor(xr, yr);
+	return color;
+}

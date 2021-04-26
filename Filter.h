@@ -165,19 +165,17 @@ public:
 	SharpnessFilter(std::size_t radius = 1) : MatrixFilter(SharpnessKernel(radius)) {}
 };
 
-class PerfectReflector
+class PerfectReflector : public Filter
 {
-protected:
-	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& maxColor) const;
 public:
+	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& maxColor) const;
 	QImage process(const QImage& img) const;
 };
 
-class HistogramStretch
+class HistogramStretch : public Filter
 {
-protected:
-	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& minColor, QColor& maxColor) const;
 public:
+	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& minColor, QColor& maxColor) const;
 	QImage process(const QImage& img) const;
 };
 
@@ -218,9 +216,8 @@ public:
 class EmbossingFilter : public MatrixFilter
 {
 public:
-	EmbossingFilter(std::size_t radius = 1) : MatrixFilter(EmbossingKernel(radius)) 
-	{
-	}
+	EmbossingFilter(std::size_t radius = 1) : MatrixFilter(EmbossingKernel(radius)) {}
+	QColor calcNewPixelColor(const QImage& img, int x, int y) const;
 };
 
 class MedianFilter //: public MatrixFilter
@@ -232,3 +229,69 @@ public:
 	QImage process(const QImage& img) const;
 };
 
+class MathMorphKernel : public Kernel
+{
+public:
+	using Kernel::Kernel;
+	MathMorphKernel(std::size_t radius = 1) : Kernel(radius)
+	{
+		std::cout << "Ñhange a structural element (y/n)?";
+		char a;
+		std::cin >> a;
+		if (a == 'y')
+		{
+			std::cout << "Radius: ";
+			std::cin >> radius;
+			for (std::size_t idx = 0; idx < getLen(); idx++)
+			{
+				std::cout << "[" << idx / getSize() << "]" <<
+					"[" << idx % getSize() << "] : ";
+				std::cin >> data[idx];
+			}
+		}
+		if (a == 'n')
+		{
+			for (std::size_t idx = 0; idx < getLen(); idx++)
+				data[idx] = 1;
+		}
+	}
+};
+
+class DilationFilter : public MatrixFilter
+{
+public:
+	DilationFilter(std::size_t radius = 1) : MatrixFilter(MathMorphKernel(radius)) {}
+	DilationFilter(Kernel& kernel) : MatrixFilter(kernel) {}
+	QColor calcNewPixelColor(const QImage& img, int x, int y) const;
+};
+
+class ErosionFilter : public MatrixFilter
+{
+public:
+	ErosionFilter(std::size_t radius = 1) : MatrixFilter(MathMorphKernel(radius)) {}
+	ErosionFilter(Kernel& kernel) : MatrixFilter(kernel) {}
+	QColor calcNewPixelColor(const QImage& img, int x, int y) const;
+};
+
+class MathGradFilter
+{
+private:
+	std::size_t radius;
+public:
+	MathGradFilter(std::size_t radius = 1) : radius(radius) {}
+	QImage process(const QImage& img) const;
+};
+
+class TransferFilter : public Filter
+{
+	QColor calcNewPixelColor(const QImage& img, int x, int y) const override;
+};
+
+class RotationFilter : public Filter
+{
+private:
+	int x0, y0, a;
+public:
+	RotationFilter(int x0 = 0, int y0 = 0, int a = 0) : x0(x0), y0(y0), a(a) {}
+	QColor calcNewPixelColor(const QImage& img, int x, int y) const override;
+};

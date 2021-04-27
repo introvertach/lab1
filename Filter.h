@@ -165,14 +165,14 @@ public:
 	SharpnessFilter(std::size_t radius = 1) : MatrixFilter(SharpnessKernel(radius)) {}
 };
 
-class PerfectReflector : public Filter
+class PerfectReflector //: public Filter
 {
 public:
 	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& maxColor) const;
 	QImage process(const QImage& img) const;
 };
 
-class HistogramStretch : public Filter
+class HistogramStretch //: public Filter
 {
 public:
 	QColor calcNewPixelColor(const QImage& img, int x, int y, QColor& minColor, QColor& maxColor) const;
@@ -220,7 +220,7 @@ public:
 	QColor calcNewPixelColor(const QImage& img, int x, int y) const;
 };
 
-class MedianFilter //: public MatrixFilter
+class MedianFilter 
 {
 private:
 	std::size_t radius;
@@ -271,6 +271,24 @@ public:
 	ErosionFilter(std::size_t radius = 1) : MatrixFilter(MathMorphKernel(radius)) {}
 	ErosionFilter(Kernel& kernel) : MatrixFilter(kernel) {}
 	QColor calcNewPixelColor(const QImage& img, int x, int y) const;
+};
+
+class MathOpenFilter
+{
+private:
+	std::size_t radius;
+public:
+	MathOpenFilter(std::size_t radius = 1) : radius(radius) {}
+	QImage process(const QImage& img) const;
+};
+
+class MathCloseFilter
+{
+private:
+	std::size_t radius;
+public:
+	MathCloseFilter(std::size_t radius = 1) : radius(radius) {}
+	QImage process(const QImage& img) const;
 };
 
 class MathGradFilter

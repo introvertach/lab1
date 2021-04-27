@@ -279,6 +279,26 @@ QColor ErosionFilter::calcNewPixelColor(const QImage& img, int x, int y) const
 		clamp(Return, 255.f, 0.f));
 }
 
+QImage MathOpenFilter::process(const QImage& img) const
+{
+	MathMorphKernel kernel(radius);
+	DilationFilter dilation(kernel);
+	ErosionFilter erosion(kernel);
+	QImage result(erosion.process(dilation.process(img)));
+
+	return result;
+}
+
+QImage MathCloseFilter::process(const QImage& img) const
+{
+	MathMorphKernel kernel(radius);
+	DilationFilter dilation(kernel);
+	ErosionFilter erosion(kernel);
+	QImage result(dilation.process(erosion.process(img)));
+
+	return result;
+}
+
 QImage MathGradFilter::process(const QImage& img) const
 {
 	MathMorphKernel kernel(radius);

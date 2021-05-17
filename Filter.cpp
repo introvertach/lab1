@@ -252,8 +252,8 @@ QColor DilationFilter::calcNewPixelColor(const QImage& img, int x, int y) const
 			QColor color = img.pixelColor(clamp(x + j, img.width() - 1, 0),
 				clamp(y + i, img.height() - 1, 0));
 
-			if (Return > color.red() * mKernel[idx])
-				Return = color.red() * mKernel[idx];
+			if (Return > color.red() && mKernel[idx])
+				Return = color.red();
 		}
 	return QColor(clamp(Return, 255.f, 0.f), clamp(Return, 255.f, 0.f),
 		clamp(Return, 255.f, 0.f));
@@ -272,8 +272,8 @@ QColor ErosionFilter::calcNewPixelColor(const QImage& img, int x, int y) const
 			QColor color = img.pixelColor(clamp(x + j, img.width() - 1, 0),
 				clamp(y + i, img.height() - 1, 0));
 
-			if (Return < color.red() * mKernel[idx] && mKernel[idx] != 0)
-				Return = color.red() * mKernel[idx];
+			if (Return < color.red() && mKernel[idx])
+				Return = color.red();
 		}
 	return QColor(clamp(Return, 255.f, 0.f), clamp(Return, 255.f, 0.f),
 		clamp(Return, 255.f, 0.f));
